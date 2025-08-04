@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
-import { Transaction } from '@/models'
+
+// Demo data storage (in-memory untuk demo)
+let demoTransactions: any[] = [
+  {
+    id: '1',
+    type: 'income',
+    amount: 5000000,
+    description: 'Gaji Bulan Ini',
+    category: 'Salary',
+    date: '2025-08-01',
+    userId: 'demo-user'
+  },
+  {
+    id: '2',
+    type: 'expense',
+    amount: 500000,
+    description: 'Belanja Groceries',
+    category: 'Food & Dining',
+    date: '2025-08-03',
+    userId: 'demo-user'
+  }
+]
 
 // GET - Fetch transactions
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    await dbConnect()
-    
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId') || 'demo-user' // For demo purposes
-    const type = searchParams.get('type')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    
-    let query: any = { userId }
-    if (type && (type === 'income' || type === 'expense')) {
-      query.type = type
-    }
-    
-    const transactions = await Transaction
-      .find(query)
-      .sort({ date: -1, createdAt: -1 })
-      .limit(limit)
-      .lean()
-    
     return NextResponse.json({
       success: true,
-      data: transactions
+      data: demoTransactions
     })
   } catch (error) {
-    console.error('Error fetching transactions:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to fetch transactions' },
       { status: 500 }
@@ -39,10 +40,8 @@ export async function GET(request: NextRequest) {
 // POST - Create new transaction
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect()
-    
     const body = await request.json()
-    const { type, amount, description, category, date, userId = 'demo-user' } = body
+    const { type, amount, description, category, date } = body
     
     // Validation
     if (!type || !amount || !description || !category || !date) {
@@ -52,37 +51,25 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    if (type !== 'income' && type !== 'expense') {
-      return NextResponse.json(
-        { success: false, error: 'Type must be income or expense' },
-        { status: 400 }
-      )
-    }
-    
-    if (amount <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Amount must be greater than 0' },
-        { status: 400 }
-      )
-    }
-    
-    const transaction = new Transaction({
-      userId,
+    // Create new transaction
+    const newTransaction = {
+      id: Date.now().toString(),
       type,
       amount: parseFloat(amount),
       description: description.trim(),
       category: category.trim(),
-      date: new Date(date)
-    })
+      date,
+      userId: 'demo-user'
+    }
     
-    await transaction.save()
+    // Add to demo storage
+    demoTransactions.push(newTransaction)
     
     return NextResponse.json({
       success: true,
-      data: transaction
+      data: newTransaction
     }, { status: 201 })
   } catch (error) {
-    console.error('Error creating transaction:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to create transaction' },
       { status: 500 }
