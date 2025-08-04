@@ -1,13 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose'
-
-// Interface for Transaction document
-export interface ITransaction extends Document {
-  userId: string
-  type: 'income' | 'expense'
-  amount: number
-  description: string
-  category: string
-  date: Date
+// File ini sudah tidak digunakan, semua model sudah dipindah ke file terpisah
+// Silakan gunakan import langsung: import Transaction from '@/models/Transaction'
+export {};
   createdAt: Date
   updatedAt: Date
 }

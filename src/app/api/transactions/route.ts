@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
-import { Transaction } from '@/models'
+import dbConnect from '@/lib/db'
+import Transaction from '@/models/Transaction'
 
 // GET - Fetch transactions
 export async function GET(request: NextRequest) {
