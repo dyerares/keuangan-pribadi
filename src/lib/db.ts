@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/keuangan-pribadi'
+// Fallback MongoDB URI untuk Vercel deployment
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://keuangan-user:LLTqiga7ZnEXV6um@cluster0.npvege2.mongodb.net/keuangan-pribadi?retryWrites=true&w=majority&appName=Cluster0'
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
