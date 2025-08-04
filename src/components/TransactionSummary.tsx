@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 interface Transaction {
-  id: string
+  _id: string
   type: 'income' | 'expense'
   amount: number
   description: string
@@ -13,38 +14,26 @@ interface Transaction {
 
 export default function TransactionSummary() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Untuk demo, kita akan menggunakan data dummy
-  // Nanti akan diganti dengan data dari database
   useEffect(() => {
-    const dummyTransactions: Transaction[] = [
-      {
-        id: '1',
-        type: 'income',
-        amount: 5000000,
-        description: 'Gaji Bulan Ini',
-        category: 'Salary',
-        date: '2025-08-01'
-      },
-      {
-        id: '2',
-        type: 'expense',
-        amount: 500000,
-        description: 'Belanja Groceries',
-        category: 'Food',
-        date: '2025-08-03'
-      },
-      {
-        id: '3',
-        type: 'expense',
-        amount: 200000,
-        description: 'Bensin Motor',
-        category: 'Transportation',
-        date: '2025-08-02'
-      }
-    ]
-    setTransactions(dummyTransactions)
+    fetchTransactions()
   }, [])
+
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch('/api/transactions?limit=5')
+      const result = await response.json()
+      
+      if (result.success) {
+        setTransactions(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -54,19 +43,37 @@ export default function TransactionSummary() {
     }).format(amount)
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Transaksi Terbaru</h2>
+        <div className="text-center py-8 text-gray-500">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
       <h2 className="text-xl font-semibold mb-4">Transaksi Terbaru</h2>
       
       {transactions.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">
-          Belum ada transaksi
-        </p>
+        <div className="text-center py-8 text-gray-500">
+          <p className="mb-2">Belum ada transaksi</p>
+          <p className="text-sm">Mulai dengan menambahkan transaksi pertama Anda</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {transactions.slice(0, 5).map((transaction) => (
+          {transactions.map((transaction) => (
             <div 
-              key={transaction.id}
+              key={transaction._id}
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
             >
               <div className="flex items-center space-x-3">
@@ -82,7 +89,7 @@ export default function TransactionSummary() {
                     {transaction.description}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {transaction.category} • {new Date(transaction.date).toLocaleDateString('id-ID')}
+                    {transaction.category} • {formatDate(transaction.date)}
                   </p>
                 </div>
               </div>
@@ -100,9 +107,12 @@ export default function TransactionSummary() {
       )}
       
       <div className="mt-4 pt-4 border-t">
-        <button className="w-full text-blue-600 hover:text-blue-700 font-medium">
+        <Link 
+          href="/transactions" 
+          className="block w-full text-center text-blue-600 hover:text-blue-700 font-medium py-2"
+        >
           Lihat Semua Transaksi →
-        </button>
+        </Link>
       </div>
     </div>
   )

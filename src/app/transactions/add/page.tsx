@@ -5,23 +5,24 @@ import { useRouter } from 'next/navigation'
 
 const categories = {
   income: [
-    'Salary',
+    'Gaji',
     'Freelance',
-    'Investment',
-    'Business',
-    'Gift',
-    'Other Income'
+    'Bisnis',
+    'Investasi',
+    'Bonus',
+    'Hadiah',
+    'Lainnya'
   ],
   expense: [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Other Expense'
+    'Makanan',
+    'Transportasi',
+    'Belanja',
+    'Tagihan',
+    'Hiburan',
+    'Kesehatan',
+    'Pendidikan',
+    'Investasi',
+    'Lainnya'
   ]
 }
 
