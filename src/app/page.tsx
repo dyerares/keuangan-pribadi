@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import DashboardCard from '@/components/DashboardCard'
 import TransactionSummary from '@/components/TransactionSummary'
 
+// Define TypeScript interfaces following project standards
 interface ISummaryData {
   totalIncome: number
   totalExpense: number
@@ -39,34 +40,50 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/summary')
+      setError(null)
+      
+      const response = await fetch('/api/summary', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
       const result = await response.json()
       
-      if (result.success) {
+      if (result.success && result.data) {
         setData(result.data)
-        setError(null)
       } else {
-        setError(result.error || 'Gagal memuat data dashboard')
+        throw new Error(result.error || 'Data tidak tersedia')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching dashboard data:', error)
-      setError('Terjadi kesalahan jaringan')
+      setError(error.message || 'Terjadi kesalahan jaringan')
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Loading state with skeleton
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        {/* Loading skeleton */}
+      <div className="space-y-8">
+        <div className="text-center">
+          <div className="h-8 bg-gray-200 rounded w-96 mx-auto mb-2 animate-pulse"></div>
+          <div className="h-6 bg-gray-200 rounded w-80 mx-auto animate-pulse"></div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2 w-24"></div>
+                  <div className="h-8 bg-gray-200 rounded w-32"></div>
                 </div>
                 <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
               </div>
@@ -77,24 +94,60 @@ export default function Dashboard() {
     )
   }
 
+  // Error state with retry option
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        <p className="font-medium">Error: {error}</p>
-        <button 
-          onClick={fetchDashboardData}
-          className="mt-2 text-sm underline hover:no-underline"
-        >
-          Coba lagi
-        </button>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Dashboard Keuangan Pribadi
+          </h1>
+          <p className="text-gray-600">
+            Kelola keuangan Anda dengan mudah dan efisien
+          </p>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-md mx-auto">
+          <div className="flex items-center space-x-2 mb-2">
+            <span className="text-red-500">⚠️</span>
+            <p className="font-medium">Gagal memuat data</p>
+          </div>
+          <p className="text-sm mb-3">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition duration-200"
+          >
+            Coba Lagi
+          </button>
+        </div>
       </div>
     )
   }
 
+  // No data state
   if (!data) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Tidak ada data tersedia</p>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Dashboard Keuangan Pribadi
+          </h1>
+          <p className="text-gray-600">
+            Kelola keuangan Anda dengan mudah dan efisien
+          </p>
+        </div>
+        
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📊</div>
+          <p className="text-gray-500 text-lg mb-2">Tidak ada data tersedia</p>
+          <p className="text-gray-400 text-sm mb-4">Silakan tambah transaksi pertama Anda</p>
+          <a
+            href="/transactions/add"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+          >
+            Tambah Transaksi Pertama
+          </a>
+        </div>
       </div>
     )
   }
@@ -111,7 +164,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Dashboard Cards - FIXED: 4 Cards dengan Saldo Tabungan dari Data Transaksi */}
+      {/* Dashboard Cards - 4 Cards dengan data real dari transaksi */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Pemasukan Bulan Ini"
@@ -145,28 +198,28 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <a
             href="/transactions/add"
-            className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200"
+            className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200 block"
           >
             💰 Tambah Pemasukan
           </a>
           <a
             href="/transactions/add"
-            className="bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200"
+            className="bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200 block"
           >
             💸 Tambah Pengeluaran
           </a>
           <a
             href="/transactions/add"
-            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg text-center transition duration-200 block"
           >
             🏦 Tambah Tabungan
           </a>
         </div>
       </div>
 
-      {/* Transaction Summary */}
+      {/* Transaction Summary - Conditional rendering */}
       <TransactionSummary 
-        recentTransactions={data.recentTransactions}
+        recentTransactions={data.recentTransactions || []}
         onTransactionUpdate={fetchDashboardData}
       />
 
@@ -224,7 +277,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-purple-500">🏦</span>
-              <p>Gunakan fitur "Tambah Tabungan" untuk melacak progress menabung</p>
+              <p>Gunakan fitur Tambah Tabungan untuk melacak progress menabung</p>
             </div>
           </div>
         </div>

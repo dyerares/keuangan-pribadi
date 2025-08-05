@@ -2,12 +2,25 @@ import { NextResponse } from 'next/server'
 import dbConnect from '../../../lib/db'
 import Transaction from '../../../models/Transaction'
 
+interface ISummaryResult {
+  totalIncome: number
+  totalExpense: number
+  totalSavings: number
+  totalTransactions: number
+  balance: number
+}
+
 export async function GET() {
   try {
     await dbConnect()
 
-    // Aggregate data untuk summary
-    const summary = await Transaction.aggregate([
+    // Aggregate transactions by type
+    const aggregateResult = await Transaction.aggregate([
+      {
+        $match: {
+          userId: 'demo-user'
+        }
+      },
       {
         $group: {
           _id: '$type',
@@ -17,31 +30,37 @@ export async function GET() {
       }
     ])
 
-    // Format hasil
-    const result = {
+    // Initialize summary object
+    const summary: ISummaryResult = {
       totalIncome: 0,
       totalExpense: 0,
-      totalSavings: 0,  // TAMBAHKAN TOTAL SAVINGS
+      totalSavings: 0,
       totalTransactions: 0,
       balance: 0
     }
 
-    summary.forEach(item => {
-      if (item._id === 'income') {
-        result.totalIncome = item.total
-      } else if (item._id === 'expense') {
-        result.totalExpense = item.total
-      } else if (item._id === 'savings') {  // TAMBAHKAN CASE SAVINGS
-        result.totalSavings = item.total
+    // Process aggregation results
+    aggregateResult.forEach(item => {
+      switch (item._id) {
+        case 'income':
+          summary.totalIncome = item.total
+          break
+        case 'expense':
+          summary.totalExpense = item.total
+          break
+        case 'savings':
+          summary.totalSavings = item.total
+          break
       }
-      result.totalTransactions += item.count
+      summary.totalTransactions += item.count
     })
 
-    // Hitung balance (income - expense, savings tidak mempengaruhi balance utama)
-    result.balance = result.totalIncome - result.totalExpense
+    // Calculate balance (income - expense, savings separate)
+    summary.balance = summary.totalIncome - summary.totalExpense
 
     // Get recent transactions
-    const recentTransactions = await Transaction.find({})
+    const recentTransactions = await Transaction
+      .find({ userId: 'demo-user' })
       .sort({ createdAt: -1 })
       .limit(5)
       .lean()
@@ -49,7 +68,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        summary: result,
+        summary,
         recentTransactions
       }
     })
@@ -58,7 +77,7 @@ export async function GET() {
     console.error('Error fetching summary:', error)
     return NextResponse.json({
       success: false,
-      error: 'Failed to fetch summary'
+      error: 'Gagal mengambil ringkasan data'
     }, { status: 500 })
   }
 }

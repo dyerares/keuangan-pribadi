@@ -1,60 +1,81 @@
-'use client'
+"use client";
 
 interface DashboardCardProps {
-  title: string
-  amount: number
-  type: 'balance' | 'income' | 'expense' | 'savings'
-  icon: string
+  title: string;
+  amount: number;
+  type: "balance" | "income" | "expense" | "savings";
+  icon: string;
 }
 
-export default function DashboardCard({ title, amount, type, icon }: DashboardCardProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+export default function DashboardCard({
+  title,
+  amount,
+  type,
+  icon,
+}: DashboardCardProps) {
+  // Indonesian currency formatting sesuai project instructions
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(amount)
-  }
+    }).format(amount);
+  };
 
   const getCardStyles = () => {
     switch (type) {
-      case 'income':
+      case "income":
         return {
-          border: 'border-l-4 border-green-500',
-          background: 'bg-green-50',
-          textColor: 'text-green-700'
-        }
-      case 'expense':
+          borderLeft: "border-l-4 border-l-green-500",
+          borderOther: "border-t border-r border-b border-gray-200",
+          background: "bg-green-50",
+          textColor: "text-green-700",
+          iconBg: "bg-green-100",
+        };
+      case "expense":
         return {
-          border: 'border-l-4 border-red-500',
-          background: 'bg-red-50',
-          textColor: 'text-red-700'
-        }
-      case 'savings':
+          borderLeft: "border-l-4 border-l-red-500",
+          borderOther: "border-t border-r border-b border-gray-200",
+          background: "bg-red-50",
+          textColor: "text-red-700",
+          iconBg: "bg-red-100",
+        };
+      case "savings":
         return {
-          border: 'border-l-4 border-blue-500',
-          background: 'bg-blue-50',
-          textColor: 'text-blue-700'
-        }
-      case 'balance':
+          borderLeft: "border-l-4 border-l-blue-500",
+          borderOther: "border-t border-r border-b border-gray-200",
+          background: "bg-blue-50",
+          textColor: "text-blue-700",
+          iconBg: "bg-blue-100",
+        };
+      case "balance":
         return {
-          border: 'border-l-4 border-purple-500',
-          background: amount >= 0 ? 'bg-purple-50' : 'bg-red-50',
-          textColor: amount >= 0 ? 'text-purple-700' : 'text-red-700'
-        }
+          borderLeft:
+            amount >= 0
+              ? "border-l-4 border-l-purple-500"
+              : "border-l-4 border-l-red-500",
+          borderOther: "border-t border-r border-b border-gray-200",
+          background: amount >= 0 ? "bg-purple-50" : "bg-red-50",
+          textColor: amount >= 0 ? "text-purple-700" : "text-red-700",
+          iconBg: amount >= 0 ? "bg-purple-100" : "bg-red-100",
+        };
       default:
         return {
-          border: 'border-l-4 border-gray-500',
-          background: 'bg-gray-50',
-          textColor: 'text-gray-700'
-        }
+          borderLeft: "border-l-4 border-l-gray-500",
+          borderOther: "border-t border-r border-b border-gray-200",
+          background: "bg-gray-50",
+          textColor: "text-gray-700",
+          iconBg: "bg-gray-100",
+        };
     }
-  }
+  };
 
-  const cardStyles = getCardStyles()
+  const cardStyles = getCardStyles();
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 border border-gray-200 ${cardStyles.border} hover:shadow-lg transition-shadow duration-200`}>
+    <div
+      className={`rounded-lg shadow-md p-6 ${cardStyles.borderLeft} ${cardStyles.borderOther} ${cardStyles.background} hover:shadow-lg transition-all duration-200`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
@@ -62,10 +83,10 @@ export default function DashboardCard({ title, amount, type, icon }: DashboardCa
             {formatCurrency(amount)}
           </p>
         </div>
-        <div className={`text-4xl p-3 rounded-full ${cardStyles.background}`}>
+        <div className={`text-3xl p-3 rounded-full ${cardStyles.iconBg}`}>
           {icon}
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,41 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-
-interface Transaction {
+// TypeScript interfaces sesuai Copilot Instructions
+interface ITransaction {
   _id: string
-  type: 'income' | 'expense'
+  type: 'income' | 'expense' | 'savings'
   amount: number
   description: string
   category: string
   date: string
+  createdAt: string
 }
 
-export default function TransactionSummary() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
+interface TransactionSummaryProps {
+  recentTransactions: ITransaction[]
+  onTransactionUpdate: () => void
+}
 
-  useEffect(() => {
-    fetchTransactions()
-  }, [])
-
-  const fetchTransactions = async () => {
-    try {
-      const response = await fetch('/api/transactions?limit=5')
-      const result = await response.json()
-      
-      if (result.success) {
-        setTransactions(result.data)
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatCurrency = (amount: number) => {
+export default function TransactionSummary({ 
+  recentTransactions, 
+  onTransactionUpdate 
+}: TransactionSummaryProps) {
+  
+  // Indonesian currency formatting sesuai project standards
+  const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -43,7 +30,8 @@ export default function TransactionSummary() {
     }).format(amount)
   }
 
-  const formatDate = (dateString: string) => {
+  // Indonesian date formatting
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: '2-digit',
       month: '2-digit',
@@ -51,68 +39,121 @@ export default function TransactionSummary() {
     })
   }
 
-  if (loading) {
+  const getTypeStyle = (type: string): string => {
+    switch (type) {
+      case 'income':
+        return 'bg-green-100 text-green-800 border-green-200'
+      case 'expense':
+        return 'bg-red-100 text-red-800 border-red-200'
+      case 'savings':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'income':
+        return 'Pemasukan'
+      case 'expense':
+        return 'Pengeluaran'
+      case 'savings':
+        return 'Tabungan'
+      default:
+        return type
+    }
+  }
+
+  const getTypeIcon = (type: string): string => {
+    switch (type) {
+      case 'income':
+        return '💰'
+      case 'expense':
+        return '💸'
+      case 'savings':
+        return '🏦'
+      default:
+        return '📄'
+    }
+  }
+
+  const getAmountColor = (type: string): string => {
+    switch (type) {
+      case 'income':
+        return 'text-green-600'
+      case 'expense':
+        return 'text-red-600'
+      case 'savings':
+        return 'text-blue-600'
+      default:
+        return 'text-gray-600'
+    }
+  }
+
+  // Handle empty state
+  if (!recentTransactions || recentTransactions.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4">Transaksi Terbaru</h2>
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Transaksi Terbaru</h3>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-2">📄</div>
+          <p className="text-gray-500 mb-2">Belum ada transaksi</p>
+          <p className="text-gray-400 text-sm mb-4">Transaksi terbaru akan muncul di sini</p>
+          <a
+            href="/transactions/add"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition duration-200"
+          >
+            Tambah Transaksi
+          </a>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-      <h2 className="text-xl font-semibold mb-4">Transaksi Terbaru</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">📋 Transaksi Terbaru</h3>
+        <a
+          href="/transactions"
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium transition duration-200"
+        >
+          Lihat Semua →
+        </a>
+      </div>
       
-      {transactions.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <p className="mb-2">Belum ada transaksi</p>
-          <p className="text-sm">Mulai dengan menambahkan transaksi pertama Anda</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {transactions.map((transaction) => (
-            <div 
-              key={transaction._id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${
-                  transaction.type === 'income' 
-                    ? 'bg-green-500' 
-                    : 'bg-red-500'
-                }`}>
-                  {transaction.type === 'income' ? '💰' : '💸'}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {transaction.description}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {transaction.category} • {formatDate(transaction.date)}
-                  </p>
-                </div>
+      <div className="space-y-3">
+        {recentTransactions.map((transaction) => (
+          <div
+            key={transaction._id}
+            className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition duration-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="text-2xl">
+                {getTypeIcon(transaction.type)}
               </div>
-              <div className={`font-semibold ${
-                transaction.type === 'income' 
-                  ? 'text-green-600' 
-                  : 'text-red-600'
-              }`}>
-                {transaction.type === 'income' ? '+' : '-'}
-                {formatCurrency(transaction.amount)}
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getTypeStyle(transaction.type)}`}>
+                    {getTypeLabel(transaction.type)}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {formatDate(transaction.date)}
+                  </span>
+                </div>
+                <p className="font-medium text-gray-900">{transaction.description}</p>
+                <p className="text-sm text-gray-600">{transaction.category}</p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-      
-      <div className="mt-4 pt-4 border-t">
-        <Link 
-          href="/transactions" 
-          className="block w-full text-center text-blue-600 hover:text-blue-700 font-medium py-2"
-        >
-          Lihat Semua Transaksi →
-        </Link>
+            <div className="text-right">
+              <p className={`font-bold ${getAmountColor(transaction.type)}`}>
+                {transaction.type === 'expense' ? '-' : '+'}
+                {formatCurrency(transaction.amount)}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
