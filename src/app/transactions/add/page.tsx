@@ -3,45 +3,44 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-const categories = {
-  income: [
-    'Gaji',
-    'Freelance',
-    'Bisnis',
-    'Investasi',
-    'Bonus',
-    'Hadiah',
-    'Lainnya'
-  ],
-  expense: [
-    'Makanan',
-    'Transportasi',
-    'Belanja',
-    'Tagihan',
-    'Hiburan',
-    'Kesehatan',
-    'Pendidikan',
-    'Investasi',
-    'Lainnya'
-  ]
+interface FormData {
+  type: 'income' | 'expense' | 'savings'  // Tambahkan 'savings'
+  amount: string
+  description: string
+  category: string
+  date: string
 }
 
 export default function AddTransactionPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    type: 'expense' as 'income' | 'expense',
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [formData, setFormData] = useState<FormData>({
+    type: 'expense',
     amount: '',
     description: '',
     category: '',
     date: new Date().toISOString().split('T')[0]
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+
+  // Kategori berdasarkan jenis transaksi
+  const getCategories = () => {
+    switch (formData.type) {
+      case 'income':
+        return ['Gaji', 'Freelance', 'Investasi', 'Bonus', 'Hadiah', 'Lainnya']
+      case 'expense':
+        return ['Makanan', 'Transport', 'Belanja', 'Hiburan', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Lainnya']
+      case 'savings':
+        return ['Tabungan Darurat', 'Tabungan Liburan', 'Tabungan Rumah', 'Tabungan Kendaraan', 'Investasi Jangka Panjang', 'Dana Pensiun', 'Lainnya']
+      default:
+        return []
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError('')
+    setIsLoading(true)
 
     try {
       const response = await fetch('/api/transactions', {
@@ -49,15 +48,18 @@ export default function AddTransactionPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          amount: parseFloat(formData.amount)
+        }),
       })
 
       const result = await response.json()
 
       if (result.success) {
-        router.push('/')
+        router.push('/transactions')
       } else {
-        setError(result.error || 'Failed to add transaction')
+        setError(result.error || 'Terjadi kesalahan')
       }
     } catch (error) {
       setError('Network error. Please try again.')
@@ -74,7 +76,7 @@ export default function AddTransactionPage() {
     }))
   }
 
-  const handleTypeChange = (type: 'income' | 'expense') => {
+  const handleTypeChange = (type: 'income' | 'expense' | 'savings') => {
     setFormData(prev => ({
       ...prev,
       type,
@@ -95,28 +97,39 @@ export default function AddTransactionPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Jenis Transaksi
             </label>
-            <div className="flex space-x-4">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => handleTypeChange('expense')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition duration-200 ${
+                className={`py-2 px-3 rounded-lg font-medium transition duration-200 text-sm ${
                   formData.type === 'expense'
                     ? 'bg-red-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Pengeluaran
+                💸 Pengeluaran
               </button>
               <button
                 type="button"
                 onClick={() => handleTypeChange('income')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition duration-200 ${
+                className={`py-2 px-3 rounded-lg font-medium transition duration-200 text-sm ${
                   formData.type === 'income'
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Pemasukan
+                💰 Pemasukan
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTypeChange('savings')}
+                className={`py-2 px-3 rounded-lg font-medium transition duration-200 text-sm ${
+                  formData.type === 'savings'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                🏦 Tabungan
               </button>
             </div>
           </div>
@@ -124,7 +137,7 @@ export default function AddTransactionPage() {
           {/* Amount */}
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-              Jumlah (Rp)
+              Jumlah (IDR)
             </label>
             <input
               type="number"
@@ -132,11 +145,11 @@ export default function AddTransactionPage() {
               name="amount"
               value={formData.amount}
               onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Masukkan jumlah"
               required
-              min="1"
-              step="1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="0"
+              min="0"
+              step="1000"
             />
           </div>
 
@@ -151,9 +164,9 @@ export default function AddTransactionPage() {
               name="description"
               value={formData.description}
               onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Deskripsi transaksi"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Masukkan deskripsi transaksi"
             />
           </div>
 
@@ -167,12 +180,14 @@ export default function AddTransactionPage() {
               name="category"
               value={formData.category}
               onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Pilih kategori</option>
-              {categories[formData.type].map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {getCategories().map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
           </div>
@@ -188,14 +203,14 @@ export default function AddTransactionPage() {
               name="date"
               value={formData.date}
               onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -204,24 +219,13 @@ export default function AddTransactionPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition duration-200 ${
+            className={`w-full font-medium py-2 px-4 rounded-lg transition duration-200 ${
               isLoading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : formData.type === 'income'
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-red-500 hover:bg-red-600 text-white'
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           >
             {isLoading ? 'Menyimpan...' : 'Simpan Transaksi'}
-          </button>
-
-          {/* Cancel Button */}
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-full py-3 px-4 rounded-lg font-medium bg-gray-200 hover:bg-gray-300 text-gray-700 transition duration-200"
-          >
-            Batal
           </button>
         </form>
       </div>

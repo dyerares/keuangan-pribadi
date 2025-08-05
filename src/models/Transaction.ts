@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface ITransaction extends Document {
-  type: 'income' | 'expense'
+  type: 'income' | 'expense' | 'savings' // Tambahkan 'savings'
   amount: number
   description: string
   category: string
@@ -13,10 +13,21 @@ export interface ITransaction extends Document {
 
 const TransactionSchema = new Schema<ITransaction>(
   {
+    userId: {
+      type: String,
+      required: [true, 'User ID is required'],
+      default: 'demo-user'
+    },
     type: {
       type: String,
-      enum: ['income', 'expense'],
-      required: [true, 'Type is required']
+      enum: ['income', 'expense', 'savings'], // Tambahkan 'savings'
+      required: [true, 'Type is required'],
+      validate: {
+        validator: function(value: string) {
+          return ['income', 'expense', 'savings'].includes(value)
+        },
+        message: 'Type must be income, expense, or savings'
+      }
     },
     amount: {
       type: Number,
@@ -38,11 +49,6 @@ const TransactionSchema = new Schema<ITransaction>(
       type: Date,
       required: [true, 'Date is required'],
       default: Date.now
-    },
-    userId: {
-      type: String,
-      required: [true, 'User ID is required'],
-      default: 'demo-user'
     }
   },
   {

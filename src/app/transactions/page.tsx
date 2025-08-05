@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 interface Transaction {
   _id: string
-  type: 'income' | 'expense'
+  type: 'income' | 'expense' | 'savings'  // Tambahkan 'savings'
   amount: number
   description: string
   category: string
@@ -15,7 +15,7 @@ interface Transaction {
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
+  const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'savings'>('all')  // Tambahkan 'savings'
 
   useEffect(() => {
     fetchTransactions()
@@ -88,6 +88,10 @@ export default function TransactionsPage() {
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0)
 
+  const totalSavings = transactions
+    .filter(t => t.type === 'savings')
+    .reduce((sum, t) => sum + t.amount, 0)
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -115,7 +119,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Total Pemasukan</div>
           <div className="text-2xl font-bold text-green-600 mt-1">
@@ -126,6 +130,12 @@ export default function TransactionsPage() {
           <div className="text-sm font-medium text-gray-500">Total Pengeluaran</div>
           <div className="text-2xl font-bold text-red-600 mt-1">
             {formatCurrency(totalExpense)}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="text-sm font-medium text-gray-500">Total Tabungan</div>
+          <div className="text-2xl font-bold text-blue-600 mt-1">
+            {formatCurrency(totalSavings)}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
@@ -140,12 +150,12 @@ export default function TransactionsPage() {
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <div className="flex space-x-1 mb-6">
+        <div className="flex flex-wrap gap-1 mb-6">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
               filter === 'all'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-gray-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -159,7 +169,7 @@ export default function TransactionsPage() {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Pemasukan ({transactions.filter(t => t.type === 'income').length})
+            💰 Pemasukan ({transactions.filter(t => t.type === 'income').length})
           </button>
           <button
             onClick={() => setFilter('expense')}
@@ -169,7 +179,17 @@ export default function TransactionsPage() {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Pengeluaran ({transactions.filter(t => t.type === 'expense').length})
+            💸 Pengeluaran ({transactions.filter(t => t.type === 'expense').length})
+          </button>
+          <button
+            onClick={() => setFilter('savings')}
+            className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
+              filter === 'savings'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            🏦 Tabungan ({transactions.filter(t => t.type === 'savings').length})
           </button>
         </div>
 
@@ -181,7 +201,10 @@ export default function TransactionsPage() {
             <p className="text-sm">
               {filter === 'all' 
                 ? 'Mulai dengan menambahkan transaksi pertama Anda'
-                : `Belum ada transaksi ${filter === 'income' ? 'pemasukan' : 'pengeluaran'}`
+                : `Belum ada transaksi ${
+                    filter === 'income' ? 'pemasukan' : 
+                    filter === 'expense' ? 'pengeluaran' : 'tabungan'
+                  }`
               }
             </p>
           </div>
@@ -196,11 +219,11 @@ export default function TransactionsPage() {
               >
                 <div className="flex items-center space-x-4">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${
-                    transaction.type === 'income' 
-                      ? 'bg-green-500' 
-                      : 'bg-red-500'
+                    transaction.type === 'income' ? 'bg-green-500' : 
+                    transaction.type === 'expense' ? 'bg-red-500' : 'bg-blue-500'
                   }`}>
-                    {transaction.type === 'income' ? '💰' : '💸'}
+                    {transaction.type === 'income' ? '💰' : 
+                     transaction.type === 'expense' ? '💸' : '🏦'}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">
@@ -213,11 +236,10 @@ export default function TransactionsPage() {
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className={`font-bold text-lg ${
-                    transaction.type === 'income' 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
+                    transaction.type === 'income' ? 'text-green-600' : 
+                    transaction.type === 'expense' ? 'text-red-600' : 'text-blue-600'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}
+                    {transaction.type === 'expense' ? '-' : '+'}
                     {formatCurrency(transaction.amount)}
                   </div>
                   <button
