@@ -15,39 +15,40 @@ const TransactionSchema = new Schema<ITransaction>(
   {
     userId: {
       type: String,
-      required: [true, 'User ID is required'],
+      required: true,
       default: 'demo-user'
     },
     type: {
       type: String,
-      enum: ['income', 'expense', 'savings'], // Tambahkan 'savings'
-      required: [true, 'Type is required'],
+      required: true,
+      enum: ['income', 'expense', 'savings'],  // PASTIKAN 'savings' ADA DI SINI
       validate: {
         validator: function(value: string) {
           return ['income', 'expense', 'savings'].includes(value)
         },
-        message: 'Type must be income, expense, or savings'
+        message: 'Type must be income, expense, or savings'  // UPDATE PESAN ERROR
       }
     },
     amount: {
       type: Number,
-      required: [true, 'Amount is required'],
-      min: [0, 'Amount must be positive']
+      required: true,
+      min: [0, 'Amount must be greater than 0']
     },
     description: {
       type: String,
-      required: [true, 'Description is required'],
+      required: true,
       trim: true,
-      maxlength: [100, 'Description cannot exceed 100 characters']
+      maxLength: [200, 'Description cannot exceed 200 characters']
     },
     category: {
       type: String,
-      required: [true, 'Category is required'],
-      trim: true
+      required: true,
+      trim: true,
+      maxLength: [50, 'Category cannot exceed 50 characters']
     },
     date: {
       type: Date,
-      required: [true, 'Date is required'],
+      required: true,
       default: Date.now
     }
   },
@@ -57,8 +58,8 @@ const TransactionSchema = new Schema<ITransaction>(
   }
 )
 
-// Index untuk performa query
+// Index untuk performance
 TransactionSchema.index({ userId: 1, date: -1 })
-TransactionSchema.index({ userId: 1, type: 1 })
+TransactionSchema.index({ type: 1 })
 
 export default mongoose.models.Transaction || mongoose.model<ITransaction>('Transaction', TransactionSchema)

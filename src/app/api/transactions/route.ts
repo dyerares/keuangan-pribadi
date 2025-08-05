@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/db'
-import Transaction from '@/models/Transaction'
+import dbConnect from '../../../lib/db'
+import Transaction from '../../../models/Transaction'
+
+// Define TypeScript interfaces following project standards
+interface ITransactionQuery {
+  userId: string
+  type?: 'income' | 'expense' | 'savings'
+}
+
+interface ITransactionBody {
+  type: 'income' | 'expense' | 'savings'
+  amount: number
+  description: string
+  category: string
+  date: string
+}
 
 // GET - Fetch transactions
 export async function GET(request: NextRequest) {
@@ -10,11 +24,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') || 'demo-user'
     const type = searchParams.get('type')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseInt(searchParams.get('limit') || '50') // Increase default limit
     
-    let query: any = { userId }
-    if (type && (type === 'income' || type === 'expense')) {
-      query.type = type
+    // Build query with proper typing
+    const query: ITransactionQuery = { userId }
+    
+    // FIX: Include 'savings' in type filter
+    if (type && ['income', 'expense', 'savings'].includes(type)) {
+      query.type = type as 'income' | 'expense' | 'savings'
     }
     
     const transactions = await Transaction
@@ -40,52 +57,100 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect()
-    
-    const body = await request.json()
-    const { type, amount, description, category, date, userId = 'demo-user' } = body
-    
-    // Validation
+
+    const body: ITransactionBody = await request.json()
+    const { type, amount, description, category, date } = body
+
+    // Input validation following project standards
     if (!type || !amount || !description || !category || !date) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Semua field wajib diisi' },
         { status: 400 }
       )
     }
     
-    if (type !== 'income' && type !== 'expense') {
+    // Validate transaction type
+    if (!['income', 'expense', 'savings'].includes(type)) {
       return NextResponse.json(
-        { success: false, error: 'Type must be income or expense' },
+        { success: false, error: 'Jenis transaksi harus income, expense, atau savings' },
         { status: 400 }
       )
     }
     
-    if (amount <= 0) {
+    // Validate amount
+    if (typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json(
-        { success: false, error: 'Amount must be greater than 0' },
+        { success: false, error: 'Jumlah harus berupa angka lebih dari 0' },
+        { status: 400 }
+      )
+    }
+
+    // Validate description length
+    if (description.trim().length === 0 || description.length > 200) {
+      return NextResponse.json(
+        { success: false, error: 'Deskripsi tidak boleh kosong dan maksimal 200 karakter' },
+        { status: 400 }
+      )
+    }
+
+    // Validate category length
+    if (category.trim().length === 0 || category.length > 50) {
+      return NextResponse.json(
+        { success: false, error: 'Kategori tidak boleh kosong dan maksimal 50 karakter' },
+        { status: 400 }
+      )
+    }
+
+    // Validate date
+    const transactionDate = new Date(date)
+    if (isNaN(transactionDate.getTime())) {
+      return NextResponse.json(
+        { success: false, error: 'Format tanggal tidak valid' },
         { status: 400 }
       )
     }
     
+    // Create transaction with proper typing
     const transaction = new Transaction({
-      userId,
+      userId: 'demo-user',
       type,
-      amount: parseFloat(amount),
+      amount: Number(amount),
       description: description.trim(),
       category: category.trim(),
-      date: new Date(date)
+      date: transactionDate
     })
     
-    await transaction.save()
+    const savedTransaction = await transaction.save()
     
     return NextResponse.json({
       success: true,
-      data: transaction
+      data: savedTransaction,
+      message: 'Transaksi berhasil disimpan'
     }, { status: 201 })
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('Error creating transaction:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create transaction' },
-      { status: 500 }
-    )
+    
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errorMessages = Object.values(error.errors).map((err: any) => err.message)
+      return NextResponse.json({
+        success: false,
+        error: `Validasi gagal: ${errorMessages.join(', ')}`
+      }, { status: 400 })
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return NextResponse.json({
+        success: false,
+        error: 'Transaksi duplikat terdeteksi'
+      }, { status: 409 })
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: 'Terjadi kesalahan internal server'
+    }, { status: 500 })
   }
 }

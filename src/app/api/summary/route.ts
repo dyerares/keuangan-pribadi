@@ -1,77 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/db'
-import Transaction from '@/models/Transaction'
+import { NextResponse } from 'next/server'
+import dbConnect from '../../../lib/db'
+import Transaction from '../../../models/Transaction'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect()
-    
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId') || 'demo-user'
-    const month = parseInt(searchParams.get('month') || new Date().getMonth().toString())
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
-    
-    // Calculate date range for the month
-    const startDate = new Date(year, month, 1)
-    const endDate = new Date(year, month + 1, 0)
-    
-    // Get transactions for the month
-    const transactions = await Transaction.find({
-      userId,
-      date: {
-        $gte: startDate,
-        $lte: endDate
+
+    // Aggregate data untuk summary
+    const summary = await Transaction.aggregate([
+      {
+        $group: {
+          _id: '$type',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
       }
-    }).lean()
-    
-    // Calculate totals
-    const totalIncome = transactions
-      .filter((t: any) => t.type === 'income')
-      .reduce((sum: number, t: any) => sum + t.amount, 0)
-    
-    const totalExpense = transactions
-      .filter((t: any) => t.type === 'expense')
-      .reduce((sum: number, t: any) => sum + t.amount, 0)
-    
-    const balance = totalIncome - totalExpense
-    
-    // Get expense by category
-    const expensesByCategory = transactions
-      .filter((t: any) => t.type === 'expense')
-      .reduce((acc: any, t: any) => {
-        acc[t.category] = (acc[t.category] || 0) + t.amount
-        return acc
-      }, {} as Record<string, number>)
-    
-    // Get income by category
-    const incomeByCategory = transactions
-      .filter((t: any) => t.type === 'income')
-      .reduce((acc: any, t: any) => {
-        acc[t.category] = (acc[t.category] || 0) + t.amount
-        return acc
-      }, {} as Record<string, number>)
-    
+    ])
+
+    // Format hasil
+    const result = {
+      totalIncome: 0,
+      totalExpense: 0,
+      totalSavings: 0,  // TAMBAHKAN TOTAL SAVINGS
+      totalTransactions: 0,
+      balance: 0
+    }
+
+    summary.forEach(item => {
+      if (item._id === 'income') {
+        result.totalIncome = item.total
+      } else if (item._id === 'expense') {
+        result.totalExpense = item.total
+      } else if (item._id === 'savings') {  // TAMBAHKAN CASE SAVINGS
+        result.totalSavings = item.total
+      }
+      result.totalTransactions += item.count
+    })
+
+    // Hitung balance (income - expense, savings tidak mempengaruhi balance utama)
+    result.balance = result.totalIncome - result.totalExpense
+
+    // Get recent transactions
+    const recentTransactions = await Transaction.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean()
+
     return NextResponse.json({
       success: true,
       data: {
-        period: { month, year },
-        summary: {
-          totalIncome,
-          totalExpense,
-          balance
-        },
-        breakdown: {
-          expensesByCategory,
-          incomeByCategory
-        },
-        transactionCount: transactions.length
+        summary: result,
+        recentTransactions
       }
     })
+
   } catch (error) {
     console.error('Error fetching summary:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch summary' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch summary'
+    }, { status: 500 })
   }
 }
