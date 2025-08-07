@@ -30,6 +30,14 @@ export default function PDFPreview({ month, onClose }: PDFPreviewProps) {
         <div className="mt-2 text-sm text-gray-500 text-center">
           Preview halaman pertama laporan bulan {month}
         </div>
+        <a
+          href={pdfUrl}
+          className="mt-4 inline-block bg-blue-600 text-white rounded px-4 py-2 text-center hover:bg-blue-700"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Buka Laporan Lengkap
+        </a>
       </div>
     </div>
   )
