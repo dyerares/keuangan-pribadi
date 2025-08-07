@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import dbConnect from '@/lib/db'
 import Transaction from '@/models/Transaction'
 import puppeteer from 'puppeteer'
+import { Document, Page, pdfjs } from 'react-pdf'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
