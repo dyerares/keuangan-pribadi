@@ -2,9 +2,26 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
+
+// Import PDFPreview secara dinamis agar tidak error SSR
+const PDFPreview = dynamic(() => import('./PDFPreview'), { ssr: false })
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showPDF, setShowPDF] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth())
+
+  // Dropdown bulan (dummy, bisa diganti dari API)
+  const months = [
+    { value: '2025-07', label: 'Juli 2025' },
+    { value: '2025-08', label: 'Agustus 2025' },
+    { value: '2025-09', label: 'September 2025' },
+  ]
+  function getCurrentMonth() {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  }
 
   return (
     <nav className="bg-white shadow-lg border-b">
@@ -29,12 +46,14 @@ export default function Navbar() {
             >
               Transaksi
             </Link>
-            <Link 
-              href="/reports" 
+            {/* Tombol Laporan PDF */}
+            <button
+              type="button"
               className="text-gray-700 hover:text-blue-600 transition duration-200"
+              onClick={() => setShowPDF(true)}
             >
-              Laporan
-            </Link>
+              Laporan PDF
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -67,20 +86,48 @@ export default function Navbar() {
               >
                 Transaksi
               </Link>
-              <Link 
-                href="/budget" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600"
-                onClick={() => setIsMenuOpen(false)}
+              {/* Tombol Laporan PDF Mobile */}
+              <button
+                type="button"
+                className="block px-3 py-2 text-gray-700 hover:text-blue-600 w-full text-left"
+                onClick={() => {
+                  setIsMenuOpen(false)
+                  setShowPDF(true)
+                }}
               >
-                Budget
-              </Link>
-              <Link 
-                href="/reports" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600"
-                onClick={() => setIsMenuOpen(false)}
+                Laporan PDF
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal PDF Preview */}
+        {showPDF && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-red-600 text-xl"
+                onClick={() => setShowPDF(false)}
               >
-                Laporan
-              </Link>
+                ×
+              </button>
+              <h2 className="text-xl font-bold mb-4 text-blue-600">Preview Laporan PDF</h2>
+              <div className="mb-4">
+                <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-1">
+                  Pilih Bulan
+                </label>
+                <select
+                  id="month"
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  className="border rounded px-3 py-2 w-full"
+                >
+                  {months.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <PDFPreview month={selectedMonth} onClose={() => setShowPDF(false)} />
             </div>
           </div>
         )}
