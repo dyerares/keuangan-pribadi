@@ -30,12 +30,6 @@ export default function Navbar() {
               Transaksi
             </Link>
             <Link 
-              href="/budget" 
-              className="text-gray-700 hover:text-blue-600 transition duration-200"
-            >
-              Budget
-            </Link>
-            <Link 
               href="/reports" 
               className="text-gray-700 hover:text-blue-600 transition duration-200"
             >
